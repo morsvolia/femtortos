@@ -1,0 +1,200 @@
+2006-01-13 17:57  yaworsky
+
+	* README: Added to CVS.
+
+2006-01-13 17:19  yaworsky
+
+	* COPYING: Added to CVS.
+
+2006-01-13 17:13  yaworsky
+
+	* demo/msp430/003-queue.c: Added to CVS.
+
+2006-01-12 17:42  yaworsky
+
+	* tests/: 006-priority-inversion.c,
+	  config-full-without-priority-inversion/femtoRTOSconfig.h: Added
+	  to CVS.
+
+2006-01-12 17:33  yaworsky
+
+	* src/femtoRTOS.c: Added comment on priority inversion support.
+
+2006-01-12 17:24  yaworsky
+
+	* src/femtoRTOS.c: Implemented priority inversion support in the
+	  right (i think) way.
+
+2006-01-12 16:09  yaworsky
+
+	* src/femtoRTOS.c: Fixed removal from delayed task list: do not
+	  bump pointer to the next item which is removed.
+
+2006-01-12 15:26  yaworsky
+
+	* doc/femtoRTOS.xml, include/femtoRTOS.h, src/femtoRTOS.c: Fixed
+	  terminology.
+
+2006-01-12 14:33  yaworsky
+
+	* src/femtoRTOS.c: Clear pointer to the next delayed task after
+	  removal from the list of delayed tasks.
+
+2006-01-12 12:17  yaworsky
+
+	* src/femtoRTOS.c: Fixed uninitialized variable.  Added
+	  NULL-checking.
+
+2006-01-12 12:06  yaworsky
+
+	* src/femtoRTOS.c: Fixed walk through the list.
+
+2006-01-12 11:48  yaworsky
+
+	* src/femtoRTOS.c: delay_current_task() should not modify the list
+	  which a task belongs to.  When a task is suspended on PSO it is
+	  not just removed from the ready list but it is moved to another
+	  list before this function is called.	So move the code that
+	  removes a task from the ready list to the sleep() function.
+
+2006-01-12 10:09  yaworsky
+
+	* src/femtoRTOS.c: Dereference timeout pointer in trace output.
+
+2006-01-12 10:04  yaworsky
+
+	* src/femtoRTOS.c: Fixed insertion to the empty list.
+
+2006-01-11 18:56  yaworsky
+
+	* tests/003-two-priority-levels.c: Fixed typo.
+
+2006-01-11 18:54  yaworsky
+
+	* src/femtoRTOS.c: Initialize tcb->list in rtos_main().  Fixed
+	  removal from the list.  Remove task from the ready list when
+	  delayed.
+
+2006-01-11 18:21  yaworsky
+
+	* src/femtoRTOS.c: Fixed initialization of ready lists.
+
+2006-01-11 17:55  yaworsky
+
+	* include/femtoRTOS.h, src/femtoRTOS.c: Fixed syntax errors and
+	  warnings of list-based implementation.
+
+2006-01-11 17:23  yaworsky
+
+	* tests/005-queue.c: Added to CVS.
+
+2006-01-11 17:19  yaworsky
+
+	* doc/femtoRTOS.xml, include/femtoRTOS.h, src/femtoRTOS.c: Fixed
+	  queue head/tail wrapping.
+
+2006-01-11 16:38  yaworsky
+
+	* src/femtoRTOS.c: Corrected wrap around of task group array when
+	  boosting a task.
+
+2006-01-11 16:18  yaworsky
+
+	* include/femtoRTOS.h: Fixed and simplified INFINITE_TIMEOUT.
+
+2006-01-11 15:51  yaworsky
+
+	* include/femtoRTOS.h: Fixed queue definition macro.
+
+2006-01-11 15:50  yaworsky
+
+	* tests/004-all-idle.c: Added to CVS.
+
+2006-01-11 15:49  yaworsky
+
+	* src/femtoRTOS.c: Fixed setting of ready task.
+
+2006-01-11 15:07  yaworsky
+
+	* tests/framework.c: Added TRACEs.
+
+2006-01-11 14:37  yaworsky
+
+	* tests/: 002-sleep.c, 003-two-priority-levels.c: Added to CVS.
+
+2006-01-11 14:36  yaworsky
+
+	* tests/001-two-free-running-tasks.c: Implemented test checking.
+
+2006-01-11 14:35  yaworsky
+
+	* include/ports/femtoRTOStest.h: Added TEST_RESULT macro.
+
+2006-01-11 12:11  yaworsky
+
+	* doc/webpage.xsl: Added to CVS.
+
+2006-01-10 17:16  yaworsky
+
+	* demo/msp430/001-two-tasks.c, demo/msp430/002-two-tasks-preempt.c,
+	  demo/msp430/config-minimal/femtoRTOSconfig.h,
+	  include/ports/femtoRTOSmsp430.h, src/femtoRTOSmsp430.c: Added to
+	  CVS.
+
+2006-01-10 17:09  yaworsky
+
+	* doc/femtoRTOS.xml: Added link to CVS repository.
+
+2006-01-10 15:39  yaworsky
+
+	* tests/framework.c: Code cleanup.
+
+2006-01-10 15:37  yaworsky
+
+	* doc/femtoRTOS.xml, include/femtoRTOS.h,
+	  include/ports/femtoRTOStest.h, src/femtoRTOS.c,
+	  tests/framework.c: Make yield() system-dependent
+
+2006-01-10 12:15  yaworsky
+
+	* doc/femtoRTOS.xml, include/femtoRTOS.h, src/femtoRTOS.c: Set
+	  current_task if it was NULL when release tasks waiting on PSO.
+	  Implement descriptive return value for functions that are
+	  intended to be called from ISR.
+
+2006-01-10 11:48  yaworsky
+
+	* doc/femtoRTOS.xml, src/femtoRTOS.c: Use TRUE/FALSE for return
+	  value of tick_handler() instead of 1/0.
+
+2006-01-09 17:40  yaworsky
+
+	* doc/femtoRTOS.xml: Added ASSERT
+
+2006-01-09 15:13  yaworsky
+
+	* doc/femtoRTOS.xml: Added to CVS.
+
+2006-01-09 12:06  yaworsky
+
+	* include/femtoRTOS.h, include/ports/femtoRTOSports.h,
+	  include/ports/femtoRTOStest.h, src/femtoRTOS.c,
+	  tests/001-two-free-running-tasks.c, tests/framework.c: Added
+	  copyright notice (BSD license).
+
+2006-01-06 12:51  yaworsky
+
+	* src/femtoRTOS.c: Fixed comment.
+
+2006-01-06 12:50  yaworsky
+
+	* src/femtoRTOS.c: Added 'const' to all struct task pointers.
+
+2006-01-05 14:15  yaworsky
+
+	* include/femtoRTOS.h, include/ports/femtoRTOSports.h,
+	  include/ports/femtoRTOStest.h, src/femtoRTOS.c,
+	  tests/001-two-free-running-tasks.c, tests/framework.c,
+	  tests/config-full/femtoRTOSconfig.h,
+	  tests/config-minimal/femtoRTOSconfig.h: Added to CVS
+

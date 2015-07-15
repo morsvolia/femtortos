@@ -1,0 +1,17 @@
+/Doc
+*/CVS/*
+*/.dep/*
+*/obj/*
+*.o
+*.o.d
+*.elf
+*.a
+*.a43
+*.lst
+*.bin
+*.hex
+*.map
+*.lss
+*~
+*.#*
+*.swp

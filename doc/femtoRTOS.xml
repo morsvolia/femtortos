@@ -1,0 +1,554 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.2"
+	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<article>
+<title>ftRTOS</title>
+
+<sect1>
+<title>Links</title>
+	<para>
+<ulink url="http://sourceforge.net/projects/ftrtos">Project page</ulink>
+	</para>
+	<para>
+<ulink url="http://sourceforge.net/project/showfiles.php?group_id=154582">Download</ulink>
+	</para>
+	<para>
+<ulink url="http://cvs.sourceforge.net/viewcvs.py/ftrtos/femtoRTOS/">CVS repository</ulink>
+	</para>
+</sect1>
+
+<sect1>
+<title>Introduction</title>
+	<para>
+This is another free and small realtime kernel for microcontrollers
+focused on minimal RAM usage.
+The <quote>ft</quote> prefix means <emphasis>femto</emphasis>, the next
+order after nano and pico :)
+	</para>
+	<para>
+Primarily this kernel is intended for MSP430 family of microcontrollers.
+Porting to another architectures is quite simple but on some architectures
+performance may degrade.
+	</para>
+	<para>
+The source code is written in pure C.
+The preference is given to GCC as free software should be compiled with a free compiler.
+Assembly language is used only where it is unavoidable.
+	</para>
+</sect1>
+
+<sect1>
+<title>Features</title>
+	<para>
+		<itemizedlist>
+			<listitem>
+				<para>
+Minimal use of RAM.
+For example, on MSP430 in minimalistic configuration it is required
+only 6 bytes of RAM per task not including stack.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+Static definition of tasks and protected shared objects.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+Multiple levels of priority, fixed priority scheduling.
+By design, the number of levels is limited by the maximum number that
+<literal>unsigned char</literal> data type can hold.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+Preemptive or cooperative scheduling policy.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+Unlimited number of tasks by design.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+No idle task.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+Simplicity and clarity as a design philosophy.
+				</para>
+			</listitem>
+		</itemizedlist>
+	</para>
+</sect1>
+
+<sect1>
+<title>Design</title>
+	<para>
+Two approaches are used to achieve the main design goal: avoiding dynamic
+memory management and splitting all structures into two parts.
+	</para>
+	<para>
+Dynamic memory management adds overhead to all memory blocks and requires
+some additional code.
+Without dynamic memory management it is impossible to dynamically
+create tasks and synchronization objects (more precisely, protected shared objects, PSO).
+But for tiny systems it is not a key feature.
+So, all tasks and PSOs are defined at compile time.
+	</para>
+	<para>
+Splitting structures that describe tasks and PSO means that
+they have constant (ROMable) and variable parts.
+The first one contains static properties, such as priority, address of
+entry point, address of stack, etc.
+The variable part is placed in RAM and contains only those properties that
+require changes at run time.
+	</para>
+	<para>
+It is necessary to note that such division requires frequent access to the
+flash/ROM and on some architectures it may lead to performance degradation.
+For example in AVR family the access to the flash memory is very painful.
+	</para>
+	<para>
+The simplicity of kernel as a design philosophy obliges to implement only minimal
+set of functions and only those which are absolutely necessary.
+There's only one global critical section which disables context switching.
+There are no functions to suspend and resume tasks (their appearance in user code
+tells that something wrong in software design).
+Only one type of PSO, namely queue, is used for communications between tasks.
+	</para>
+	<para>
+However, sticking to minimalistic design leads to inflexibility.
+Therefore in addition to minimalistic design a list-based design has been implemented.
+The user can choose either.
+The differences and features will be explained later.
+Generally, list-based design increases the size of variable part of task structure
+(on MSP430 it becomes 12 bytes) but allows several waiting tasks on each side of PSO,
+the priority inversion problem is handled (the user's choice) and other types
+of PSO may be implemented.
+	</para>
+</sect1>
+
+<sect1>
+<title>Tasks</title>
+	<para>
+A task is a function like this:
+<screen>
+void task()
+{
+    for(;;)
+    {
+        /* do something */
+    }
+}</screen>
+The function should never return.
+	</para>
+	<para>
+Tasks are defined in the following steps:
+		<orderedlist>
+			<listitem>
+				<para>
+Define task functions or at least their prototypes.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+Define task control blocks, TCB.
+TCB is the variable part of task structure.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+Group tasks by priorities.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+Define array of task groups.
+				</para>
+			</listitem>
+		</orderedlist>
+The order of first two steps does not matters.
+TCBs may be defined before task functions and the order of
+definitions also does not matters.
+	</para>
+	<para>
+Task control blocks are defined with the <function>TCB</function> macro.
+This macro accepts two parameters: the name of task and the size of stack.
+Note that the name of task is not a name of task function, a different one should be choosen.
+The size of stack is the number of values of <literal>void*</literal> data type
+(for proper alignment).
+For example, define four task control blocks:
+<screen>
+TCB( task_1, 48 );
+TCB( task_2, 64 );
+TCB( task_3, 32 );
+TCB( task_4, 80 );</screen>
+	</para>
+	<para>
+Now suppose we defined functions
+<function>task_1_func</function>,
+<function>task_2_func</function>,
+<function>task_3_func</function> and
+<function>task_4_func</function>.
+It's time to perform the third step.
+Tasks are grouped together with the <function>TASK_GROUP</function> macro.
+It accepts one parameter, the name of the group.
+The macro actually defines an array of structures and items should be initialized
+with the <function>TASK</function> macro.
+This macro accepts three parameters: priority, the name of task and the name of task function.
+In the following example we define two levels of priority:
+<screen>
+TASK_GROUP( idle_priority_tasks ) {
+    TASK( 0, task_1, task_1_func ),
+    TASK( 0, task_2, task_2_func )
+};
+TASK_GROUP( normal_priority_tasks ) {
+    TASK( 1, task_3, task_3_func ),
+    TASK( 1, task_4, task_4_func )
+};</screen>
+
+The order of groups does not matter but it is less error-prone when they are defined
+sequentially starting with lowest priority which should be 0.
+Priority value should be increased sequentially without gaps.
+	</para>
+	<para>
+Each level of priority requires additional entry in the internal table
+<varname>task_lists</varname>.
+The entry is a pointer to the running or ready task of the corresponding priority.
+	</para>
+	<para>
+The last step is performed with the help of three macros:
+<function>TASKS_BEGIN</function>,
+<function>TASKS_ITEM</function> and
+<function>TASKS_END</function>.
+Look at the example:
+<screen>
+TASKS_BEGIN
+    TASKS_ITEM( idle_priority_tasks ),
+    TASKS_ITEM( normal_priority_tasks )
+TASKS_END;</screen>
+
+Groups of tasks should be defined exactly sequentially starting from the lowest priority.
+	</para>
+	<para>
+That's all.
+The scheduler is ready to run.
+	</para>
+</sect1>
+
+<sect1>
+<title>Scheduler</title>
+	<para>
+A task may be in the one of the following states: idle, ready and running.
+The state of a task is defined explicitly: running task is pointed to by the
+<varname>current_task</varname>, idle tasks are referenced by PSO, linked
+into the delayed list or just abandoned if delayed infinitely.
+	</para>
+	<para>
+The scheduler is started by the <function>rtos_main</function> function.
+This function performs initialization of stacks, task control blocks and
+internal variables, such as <varname>current_task</varname> pointer.
+The first task that is gained control is the task with highest priority.
+	</para>
+	<para>
+Tasks of the same priority are switched by the round-robin policy
+with one exception: when a task is resumed by the event related with PSO
+it is gained control out of the order.
+	</para>
+	<para>
+When all tasks of high priority become idle the scheduler proceeds with tasks
+of lower priority and so on.
+There's a special lowest priority task in most operating systems which never becomes
+idle but there's no such task in this kernel.
+The presence of such task simplifies the design but it requires a relatively large
+amount of RAM for its context.
+In this kernel when all tasks are idle <varname>current_task</varname> is NULL so it
+should be checked in the hardware-specific functions or macros
+<function>save_context</function> and <function>restore_context</function>.
+When there's no task to run MCU may be put into the sleep state or enter infinite loop.
+	</para>
+	<para>
+The scheduler requires that a function <function>tick_handler</function>
+should be invoked from some timer interrupt service routine.
+All timings are measured in the number of ticks, not in real units.
+The calculations between seconds and number of ticks are leaved to the user.
+	</para>
+	<para>
+Tasks that are delayed for the specified amount of time are linked into singly-linked
+list (field <varname>next_delayed_task</varname> in TCB).
+Tick handler walks through this list and decrements remaining tick count
+(field <varname>wait_countdown</varname> in TCB).
+When it becomes zero the task is removed from the list.
+In list-based design it is also moved to the end of ready list of corresponding priority.
+	</para>
+	<para>
+Preemptive task switching is performed with the help of <function>switch_context</function>
+function.
+It must be called within some timer interrupt service routine.
+Here is an example of ISR function body:
+<screen>
+save_context();
+switch_context();
+restore_context();</screen>
+
+The function should be <quote>naked</quote>.
+If a C compiler is used, it should not contain generated prologue and epilogue.
+Using GCC it is possible to achieve this with <literal>naked</literal> attribute
+(however, this works not for all architectures but workarounds are possible,
+see test framework for example).
+	</para>
+	<para>
+Usually, <function>switch_context</function> is called from the same
+routine after <function>tick_handler</function>.
+But in this case the following should be considered:
+if the tick handler changes state of some task to <quote>ready</quote>
+and there were no ready task, it assigns a value to <varname>current_task</varname>
+and returns TRUE.
+This means that context should be restored immediately and <function>switch_context</function>
+should not be called.
+An example:
+<screen>
+save_context();
+if( !tick_handler() )
+    switch_context();
+restore_context();</screen>
+	</para>
+</sect1>
+
+<sect1>
+<title>Queues</title>
+	<para>
+Queue is a ring buffer.
+Definition is simple. For example, define queue for two items each of 4 bytes:
+<screen>
+QUEUE( sample_queue, 2, 4 );</screen>
+The product of item size and queue capacity should fit into
+<literal>unsigned char</literal> data type.
+	</para>
+	<para>
+In the minimalistic implementation only one task may be waiting at one side
+of queue.
+In the list-based implementation the number of waiting tasks is unlimited.
+	</para>
+</sect1>
+
+<sect1>
+<title>Configuration</title>
+	<para>
+The user should provide <filename>femtoRTOSconfig.h</filename> file.
+It should contain the following essential definitions:
+		<variablelist>
+			<varlistentry>
+				<term>
+tick_t data type
+				</term>
+				<listitem>
+					<para>
+This data type is used for variables that contain number of ticks.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>
+USE_TASK_LISTS
+				</term>
+				<listitem>
+					<para>
+If defined, select list-based implementation.
+					</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>
+PRIORITY_INVERSION_SUPPORT
+				</term>
+				<listitem>
+					<para>
+If defined, priority inversion is handled.
+If USE_TASK_LIST is not defined, it has no effect.
+					</para>
+				</listitem>
+			</varlistentry>
+		</variablelist>
+
+The user should select port type with the following macros:
+		<segmentedlist>
+		<?dbhtml list-presentation="table"?>
+			<segtitle>Name</segtitle><segtitle>Description</segtitle>
+			<seglistitem>
+				<seg>
+USE_PORT_MSP430
+				</seg>
+				<seg>
+Port for MSP430 family of microcontrollers.
+				</seg>
+			</seglistitem>
+			<seglistitem>
+				<seg>
+USE_PORT_TEST
+				</seg>
+				<seg>
+Port for testing purposes.
+				</seg>
+			</seglistitem>
+			<seglistitem>
+				<seg>
+USE_CUSTOM_PORT
+				</seg>
+				<seg>
+Custom port.
+Defined value should be a name of header file which will be included.
+				</seg>
+			</seglistitem>
+		</segmentedlist>
+
+If the runtime or debugging environment allows output of debug/trace messages
+it is possible to provide custom definitions of <function>TRACE</function>,
+<function>TRACE_SWITCH_CONTEXT</function> and <function>ASSERT</function>.
+Look into <filename>include/ports/femtoRTOStest.h</filename> for examples.
+	</para>
+</sect1>
+
+<sect1>
+<title>API</title>
+	<para>
+FIXME: describe
+<screen>
+int tick_handler()
+void switch_context()
+void enter_critical_section()
+void leave_critical_section()
+void yield()
+void sleep( tick_t timeout )
+
+void rtos_main()
+
+int queue_push( const struct queue* queue, void* buffer, tick_t timeout )
+enum pso_result queue_push_from_isr( const struct queue* queue, void* buffer )
+int queue_pop( const struct queue* queue, void* buffer, tick_t timeout )
+enum pso_result queue_pop_from_isr( const struct queue* queue, void* buffer )
+</screen>
+	</para>
+</sect1>
+
+<sect1>
+<title>Porting</title>
+	<para>
+The following functions should be implemented or defined as macros:
+FIXME: describe
+<screen>
+void enable_interrupts()
+void disable_interrupts()
+void enter_critical_section()
+void yield()
+void restore_context()
+void save_context() (not used in kernel code)
+void* init_stack( char* stack, int stack_size, void (*task_function)() )
+</screen>
+	</para>
+	<para>
+Actually, <function>save_context</function> and <function>restore_context</function>
+should replace prologue and epilogue of interrupt service routine.
+<function>restore_context</function> should end up with <quote>return from ISR</quote>
+instruction and interrupts should be enabled after it.
+	</para>
+	<para>
+<function>save_context</function> pseudocode:
+<screen>
+    if( current_task )
+    {
+        /* save context */
+        push reg1;
+        push reg2;
+        /* ... */
+        push regN;
+        current_context->saved_top_of_stack = regSP;
+    }
+    else
+    {
+        /* rewind stack: remove return address and flags */
+        pop temp
+        pop temp
+    }</screen>
+
+<function>restore_context</function> pseudocode:
+<screen>
+    if( current_task )
+    {
+        /* restore context */
+        regSP = current_context->saved_top_of_stack;
+        pop regN;
+        /* ... */
+        pop reg2;
+        pop reg1;
+    }
+    else
+    {
+        enable_interrupts();
+        for(;;);
+        /* or halt CPU/enter sleep state */
+    }</screen>
+
+<function>yield</function> function:
+<screen>
+    disable_interrupts();
+    save_context();
+    switch_context();
+    restore_context();</screen>
+	</para>
+
+</sect1>
+
+<sect1>
+<title>License</title>
+	<para>
+Copyright (c) 2006, Alexander Yaworsky
+	</para>
+	<para>
+All rights reserved.
+	</para>
+	<para>
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+		<orderedlist>
+			<listitem>
+				<para>
+Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+Neither the name of the author may be used to endorse or promote
+products derived from this software without specific prior written
+permission.
+				</para>
+			</listitem>
+		</orderedlist>
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	</para>
+</sect1>
+
+</article>

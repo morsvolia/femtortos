@@ -1,0 +1,36 @@
+ftRTOS
+
+http://ftrtos.sourceforge.net
+
+This is a tiny realtime kernel for microcontrollers focused on minimal RAM usage.
+Fixed priority scheduling, preemptive or cooperative multitasking, no dynamic task
+and memory management, all objects are defined at compile time.
+
+See doc/femtoRTOS.html for details.
+
+Directory layout:
+
+demo	Sample programs.
+doc	Project documentation.
+include	Header files.
+src	Source code.
+tests	Regression tests.
+
+How to compile tests:
+
+cd src
+gcc -c -Wall -g -I../include -I../tests/config-minimal femtoRTOS.c
+cd ../tests
+gcc -c -Wall -g -I../include -Iconfig-minimal framework.c
+gcc -Wall -g -I../include -Iconfig-minimal 001-two-free-running-tasks.c ../src/femtoRTOS.o framework.o
+...
+
+How to compile samples:
+
+cd src
+msp430-gcc -I../demo/msp430/config-minimal -I../include -c -Wall -mmcu=msp430x123 -g -Os femtoRTOS.c
+msp430-gcc -I../demo/msp430/config-minimal -I../include -c -Wall -mmcu=msp430x123 -g -Os femtoRTOSmsp430.c
+cd ../demo/msp430
+msp430-gcc -Iconfig-minimal -I../../include -Wall -mmcu=msp430x123 -g -Os \
+	003-queue.c ../../src/femtoRTOSmsp430.o ../../src/femtoRTOS.o
+
