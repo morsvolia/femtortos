@@ -8,14 +8,14 @@
 static void task_1_func()
 {
 	for(;;)	{
-		P3OUT |= BIT0;
+		P1OUT |= BIT0;
 	}
 }
 
 static void task_2_func()
 {
 	for(;;) {
-		P3OUT &= ~BIT0;
+		P1OUT &= ~BIT0;
 	}
 }
 
@@ -31,8 +31,8 @@ TASKS_BEGIN
 	TASKS_ITEM( tasks )
 TASKS_END;
 
-interrupt (WDT_VECTOR) tickISR() __attribute__ ( ( naked ) );
-interrupt (WDT_VECTOR) tickISR()
+__attribute__((interrupt(WDT_VECTOR)))
+void tickISR(void)
 {
 	save_context();
 	if( !tick_handler() )
@@ -43,13 +43,15 @@ interrupt (WDT_VECTOR) tickISR()
 int main()
 {
         /* init ports */
-	P1OUT = 0;
+	P1DIR = 0xFF;
+	P1OUT = 0xFF;
+	P2DIR = 0xFF;
 	P2OUT = 0;
-	P3OUT = BIT2;  /* TPS60211 SNOOZE off */
+	//P3OUT = BIT2;  /* TPS60211 SNOOZE off */
 
-	P1DIR = 0xFE;  /* all outputs but button 2 */
-	P2DIR = 0xE7;  /* all outputs but comparator */
-	P3DIR = 0x7F;  /* all outputs but button 1 */
+	//P1DIR = 0xFE;  /* all outputs but button 2 */
+	//P2DIR = 0xE7;  /* all outputs but comparator */
+	//P3DIR = 0x7F;  /* all outputs but button 1 */
 
 	/* use watchdog timer as interval timer, SMCLK/8192 */
 	WDTCTL = WDTPW | WDTTMSEL | WDTCNTCL | WDTIS0;

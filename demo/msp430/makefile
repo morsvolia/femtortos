@@ -1,4 +1,5 @@
-TARGET = 001-two-tasks
+#TARGET = 001-two-tasks
+TARGET = 002-two-tasks-preempt
 OS_SRC = ../../src
 CSRC = $(OS_SRC)/femtoRTOS.c $(OS_SRC)/femtoRTOSmsp430.c $(TARGET).c
 CFG_INC = config-full
