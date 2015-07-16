@@ -2,7 +2,7 @@
 TARGET = 002-two-tasks-preempt
 OS_SRC = ../../src
 CSRC = $(OS_SRC)/femtoRTOS.c $(OS_SRC)/femtoRTOSmsp430.c $(TARGET).c
-CFG_INC = config-full
+CFG_INC = config-full-without-priority-inversion
 OS_INC = ../../include
 
 MCU = msp430g2553
@@ -11,7 +11,7 @@ MCU = msp430g2553
 CROSS_DIR = /opt/msp430-gcc-linux-3.3.4
 CROSS = $(CROSS_DIR)/bin/msp430-elf-
 
-CFLAGS = -c -Wall -O3 -g -I $(CFG_INC) -I $(OS_INC) -I $(CROSS_DIR)/include
+CFLAGS = -c -Wall -O2 -g -I $(CFG_INC) -I $(OS_INC) -I $(CROSS_DIR)/include
 ASFLAGS = 
 LDFLAGS = -L$(CROSS_DIR)/include
 

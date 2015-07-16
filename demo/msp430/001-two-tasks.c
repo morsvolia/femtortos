@@ -6,7 +6,7 @@
 
 static void task_1_func()
 {
-	for(;;)	{
+	while(1){
 		P1OUT |= BIT0;
 		yield();
 		P1OUT &= ~BIT0;
@@ -16,7 +16,7 @@ static void task_1_func()
 
 static void task_2_func()
 {
-	for(;;) {
+	while(1) {
 		P1OUT |= BIT6;
 		yield();
 		P1OUT &= ~BIT6;
@@ -48,6 +48,10 @@ int main()
 //	P1DIR = 0xFE;  /* all outputs but button 2 */
 //	P2DIR = 0xE7;  /* all outputs but comparator */
 //	P3DIR = 0x7F;  /* all outputs but button 1 */
+
+	BCSCTL1 = CAL_BC1_16MHZ;
+	BCSCTL2 = 0;
+	DCOCTL = CAL_DCO_16MHZ;
 
 	/* start the scheduler */
 	rtos_main();
