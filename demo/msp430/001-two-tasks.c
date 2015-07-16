@@ -7,9 +7,9 @@
 static void task_1_func()
 {
 	for(;;)	{
-		P3OUT |= BIT0;
+		P1OUT |= BIT0;
 		yield();
-		P3OUT &= ~BIT0;
+		P1OUT &= ~BIT0;
 		yield();
 	}
 }
@@ -17,9 +17,9 @@ static void task_1_func()
 static void task_2_func()
 {
 	for(;;) {
-		P3OUT |= BIT1;
+		P1OUT |= BIT6;
 		yield();
-		P3OUT &= ~BIT1;
+		P1OUT &= ~BIT6;
 		yield();
 	}
 }
@@ -39,13 +39,15 @@ TASKS_END;
 int main()
 {
         /* init ports */
-	P1OUT = 0;
+	P1DIR = 0xFF;
+	P1OUT = BIT0 + BIT6;
+	P2OUT = 0xFF;
 	P2OUT = 0;
-	P3OUT = BIT2;  /* TPS60211 SNOOZE off */
+//	P3OUT = BIT2;  /* TPS60211 SNOOZE off */
 
-	P1DIR = 0xFE;  /* all outputs but button 2 */
-	P2DIR = 0xE7;  /* all outputs but comparator */
-	P3DIR = 0x7F;  /* all outputs but button 1 */
+//	P1DIR = 0xFE;  /* all outputs but button 2 */
+//	P2DIR = 0xE7;  /* all outputs but comparator */
+//	P3DIR = 0x7F;  /* all outputs but button 1 */
 
 	/* start the scheduler */
 	rtos_main();
