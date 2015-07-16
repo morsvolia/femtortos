@@ -31,7 +31,7 @@
 #ifndef FEMTO_RTOS_MSP430_H
 #define FEMTO_RTOS_MSP430_H
 
-#include <io.h>
+#include <msp430.h>
 
 #define enable_interrupts()  asm volatile ( "eint" )
 #define disable_interrupts() asm volatile ( "dint" )
